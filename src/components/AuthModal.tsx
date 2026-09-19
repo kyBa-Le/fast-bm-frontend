@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { formatFriendlyErrorMessage } from '../services/api';
 import { X, Lock, User, Mail, AlertCircle } from 'lucide-react';
 
 interface AuthModalProps {
@@ -30,7 +31,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       }
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Đã có lỗi xảy ra. Vui lòng kiểm tra lại.');
+      setError(formatFriendlyErrorMessage(err));
     } finally {
       setIsSubmitting(false);
     }
@@ -98,7 +99,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 required
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="dat_budget"
+                placeholder="Nhập tên đăng nhập"
                 className="w-full pl-10 pr-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition"
               />
             </div>

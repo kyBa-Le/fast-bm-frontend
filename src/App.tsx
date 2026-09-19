@@ -5,12 +5,17 @@ import { AuthModal } from './components/AuthModal';
 import { BalanceSummary } from './components/BalanceSummary';
 import { QuickEntryForm } from './components/QuickEntryForm';
 import { TransactionList } from './components/TransactionList';
-import { api } from './services/api';
+import {
+  api,
+  formatFriendlyErrorMessage,
+  getPendingTransactions,
+  savePendingTransactions,
+} from './services/api';
 import { Transaction, TransactionSummary, CreateTransactionPayload } from './types';
-import { Lock, User, Mail, AlertCircle } from 'lucide-react';
+import { Lock, User, Mail, AlertCircle, RefreshCw, CloudOff, CheckCircle } from 'lucide-react';
 
 const MainContent: React.FC = () => {
-  const { isAuthenticated, login, register } = useAuth();
+  const { user, isAuthenticated, login, register } = useAuth();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [summary, setSummary] = useState<TransactionSummary>({
@@ -21,6 +26,11 @@ const MainContent: React.FC = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Offline pending transactions & sync state
+  const [pendingCount, setPendingCount] = useState<number>(0);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncNotification, setSyncNotification] = useState<string | null>(null);
 
   // Auth gate state for unauthenticated view
   const [isLoginTab, setIsLoginTab] = useState(true);
@@ -46,7 +56,59 @@ const MainContent: React.FC = () => {
 
   useEffect(() => {
     loadData();
+    const pending = getPendingTransactions();
+    setPendingCount(pending.length);
   }, [loadData]);
+
+  const syncPendingTransactions = useCallback(async () => {
+    const pending = getPendingTransactions();
+    if (pending.length === 0 || isSyncing) return;
+
+    setIsSyncing(true);
+    setSyncNotification('Đang đồng bộ giao dịch lưu tạm lên máy chủ...');
+
+    let syncedCount = 0;
+    const remaining: any[] = [];
+
+    for (const item of pending) {
+      try {
+        await api.createTransaction({
+          type: item.type,
+          amount: item.amount,
+          currency: item.currency || 'VND',
+          date: item.date,
+          time: item.time,
+          description: item.description,
+          category: item.category,
+        });
+        syncedCount++;
+      } catch (err) {
+        remaining.push(item);
+      }
+    }
+
+    savePendingTransactions(remaining);
+    setPendingCount(remaining.length);
+    setIsSyncing(false);
+
+    if (syncedCount > 0) {
+      setSyncNotification(`Đã đồng bộ thành công ${syncedCount} giao dịch lên máy chủ!`);
+      await loadData();
+      setTimeout(() => setSyncNotification(null), 5000);
+    } else if (remaining.length > 0) {
+      setSyncNotification('Không thể kết nối máy chủ. Giao dịch vẫn được bảo lưu an toàn trên máy.');
+      setTimeout(() => setSyncNotification(null), 5000);
+    }
+  }, [isSyncing, loadData]);
+
+  // Auto-sync when internet comes back online
+  useEffect(() => {
+    const handleOnline = () => {
+      syncPendingTransactions();
+    };
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
+  }, [syncPendingTransactions]);
 
   const handleCreateTransaction = async (payload: CreateTransactionPayload) => {
     setIsSaving(true);
@@ -54,6 +116,40 @@ const MainContent: React.FC = () => {
       const newTx = await api.createTransaction(payload);
       setTransactions((prev) => [newTx, ...prev]);
       await loadData();
+    } catch (err: any) {
+      // Fallback: save to localStorage to prevent data loss
+      const offlineTx: Transaction = {
+        id: `offline-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+        user_id: user?.id || 'local-user',
+        type: payload.type,
+        amount: payload.amount,
+        currency: payload.currency || 'VND',
+        date: payload.date,
+        time: payload.time || new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+        description: payload.description || payload.category,
+        category: payload.category,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      const existing = getPendingTransactions();
+      const updated = [...existing, offlineTx];
+      savePendingTransactions(updated);
+      setPendingCount(updated.length);
+
+      // Optimistic UI update
+      setTransactions((prev) => [offlineTx, ...prev]);
+      setSummary((prev) => ({
+        ...prev,
+        totalIncome: offlineTx.type === 'INCOME' ? prev.totalIncome + offlineTx.amount : prev.totalIncome,
+        totalExpense: offlineTx.type === 'EXPENSE' ? prev.totalExpense + offlineTx.amount : prev.totalExpense,
+        balance: offlineTx.type === 'INCOME' ? prev.balance + offlineTx.amount : prev.balance - offlineTx.amount,
+        count: prev.count + 1,
+      }));
+
+      setSyncNotification(
+        'Đã lưu tạm giao dịch trên thiết bị do kết nối mạng gián đoạn. Giao dịch sẽ được tự động đồng bộ khi có kết nối trở lại.'
+      );
     } finally {
       setIsSaving(false);
     }
@@ -65,7 +161,7 @@ const MainContent: React.FC = () => {
       setTransactions((prev) => prev.map((t) => (t.id === id ? updated : t)));
       await loadData();
     } catch (err: any) {
-      alert(`Không thể cập nhật giao dịch: ${err.message}`);
+      alert(`Không thể cập nhật giao dịch: ${formatFriendlyErrorMessage(err)}`);
     }
   };
 
@@ -75,7 +171,7 @@ const MainContent: React.FC = () => {
       setTransactions((prev) => prev.filter((t) => t.id !== id));
       await loadData();
     } catch (err: any) {
-      alert(`Không thể xoá giao dịch: ${err.message}`);
+      alert(`Không thể xoá giao dịch: ${formatFriendlyErrorMessage(err)}`);
     }
   };
 
@@ -90,7 +186,7 @@ const MainContent: React.FC = () => {
         await register(username, password, email);
       }
     } catch (err: any) {
-      setAuthError(err.message || 'Đã có lỗi xảy ra. Vui lòng kiểm tra lại thông tin.');
+      setAuthError(formatFriendlyErrorMessage(err));
     } finally {
       setIsAuthSubmitting(false);
     }
@@ -211,6 +307,43 @@ const MainContent: React.FC = () => {
         ) : (
           /* Authenticated Dashboard */
           <div>
+            {/* Pending Sync / Offline Alert Banner */}
+            {(pendingCount > 0 || syncNotification) && (
+              <div className="mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs animate-in fade-in">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center text-amber-700 shrink-0">
+                    {isSyncing ? (
+                      <RefreshCw className="w-4 h-4 animate-spin text-amber-800" />
+                    ) : pendingCount > 0 ? (
+                      <CloudOff className="w-4 h-4 text-amber-700" />
+                    ) : (
+                      <CheckCircle className="w-4 h-4 text-emerald-600" />
+                    )}
+                  </div>
+                  <div>
+                    <div className="text-xs sm:text-sm font-bold text-amber-900">
+                      {syncNotification || `Có ${pendingCount} giao dịch lưu tạm trên máy (chưa đồng bộ)`}
+                    </div>
+                    <div className="text-[11px] text-amber-700">
+                      Dữ liệu được lưu an toàn trên trình duyệt và sẽ tự động đồng bộ khi có kết nối lại.
+                    </div>
+                  </div>
+                </div>
+
+                {pendingCount > 0 && (
+                  <button
+                    type="button"
+                    disabled={isSyncing}
+                    onClick={syncPendingTransactions}
+                    className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-xs transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+                    <span>{isSyncing ? 'Đang đồng bộ...' : 'Đồng bộ ngay'}</span>
+                  </button>
+                )}
+              </div>
+            )}
+
             {/* Balance Overview Cards (Distinct 3 Colors) */}
             <BalanceSummary summary={summary} />
 
