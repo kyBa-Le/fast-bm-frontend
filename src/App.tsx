@@ -12,7 +12,7 @@ import {
   savePendingTransactions,
 } from './services/api';
 import { Transaction, TransactionSummary, CreateTransactionPayload } from './types';
-import { Lock, User, Mail, AlertCircle, RefreshCw, CloudOff, CheckCircle } from 'lucide-react';
+import { Lock, User, Mail, AlertCircle, RefreshCw, CloudOff, CheckCircle, History, PlusCircle } from 'lucide-react';
 
 const MainContent: React.FC = () => {
   const { user, isAuthenticated, login, register } = useAuth();
@@ -26,6 +26,9 @@ const MainContent: React.FC = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Mobile view tab state (FORM vs HISTORY)
+  const [mobileTab, setMobileTab] = useState<'FORM' | 'HISTORY'>('FORM');
 
   // Offline pending transactions & sync state
   const [pendingCount, setPendingCount] = useState<number>(0);
@@ -345,15 +348,43 @@ const MainContent: React.FC = () => {
             {/* Balance Overview Cards (Distinct 3 Colors) */}
             <BalanceSummary summary={summary} />
 
+            {/* Mobile View Switcher Tabs (Only visible on mobile devices < lg) */}
+            <div className="lg:hidden flex rounded-2xl bg-slate-200/80 p-1 mb-5 text-xs font-bold border border-slate-300/50 shadow-2xs">
+              <button
+                type="button"
+                onClick={() => setMobileTab('FORM')}
+                className={`flex-1 py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                  mobileTab === 'FORM'
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <PlusCircle className="w-4 h-4" />
+                <span>Nhập thu chi</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setMobileTab('HISTORY')}
+                className={`flex-1 py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                  mobileTab === 'HISTORY'
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <History className="w-4 h-4" />
+                <span>Xem lịch sử ({transactions.length})</span>
+              </button>
+            </div>
+
             {/* 2-Column Responsive Workspace */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-              {/* Left Column: Unified Single-Page Quick Entry Form */}
-              <div className="w-full lg:col-span-5 sticky top-20">
+              {/* Form: visible on mobile when mobileTab === 'FORM', always visible on desktop */}
+              <div className={`w-full lg:col-span-5 sticky top-20 ${mobileTab === 'FORM' ? 'block' : 'hidden lg:block'}`}>
                 <QuickEntryForm onSubmit={handleCreateTransaction} isLoading={isSaving} />
               </div>
 
-              {/* Right Column: Real-time Transaction Ledger & Filter (Do not show on mobile devices) */}
-              <div className="hidden lg:block lg:col-span-7">
+              {/* History: visible on mobile when mobileTab === 'HISTORY', always visible on desktop */}
+              <div className={`w-full lg:col-span-7 ${mobileTab === 'HISTORY' ? 'block' : 'hidden lg:block'}`}>
                 <TransactionList
                   transactions={transactions}
                   onDelete={handleDeleteTransaction}
