@@ -215,18 +215,16 @@ const MainContent: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => { setIsLoginTab(true); setAuthError(null); }}
-                  className={`flex-1 py-2 rounded-lg transition cursor-pointer ${
-                    isLoginTab ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
-                  }`}
+                  className={`flex-1 py-2 rounded-lg transition cursor-pointer ${isLoginTab ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
+                    }`}
                 >
                   Đăng nhập
                 </button>
                 <button
                   type="button"
                   onClick={() => { setIsLoginTab(false); setAuthError(null); }}
-                  className={`flex-1 py-2 rounded-lg transition cursor-pointer ${
-                    !isLoginTab ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
-                  }`}
+                  className={`flex-1 py-2 rounded-lg transition cursor-pointer ${!isLoginTab ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
+                    }`}
                 >
                   Đăng ký mới
                 </button>
@@ -350,12 +348,12 @@ const MainContent: React.FC = () => {
             {/* 2-Column Responsive Workspace */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
               {/* Left Column: Unified Single-Page Quick Entry Form */}
-              <div className="lg:col-span-5 sticky top-20">
+              <div className="w-full lg:col-span-5 sticky top-20">
                 <QuickEntryForm onSubmit={handleCreateTransaction} isLoading={isSaving} />
               </div>
 
-              {/* Right Column: Real-time Transaction Ledger & Filter */}
-              <div className="lg:col-span-7">
+              {/* Right Column: Real-time Transaction Ledger & Filter (Do not show on mobile devices) */}
+              <div className="hidden lg:block lg:col-span-7">
                 <TransactionList
                   transactions={transactions}
                   onDelete={handleDeleteTransaction}

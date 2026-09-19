@@ -17,7 +17,6 @@ interface AuthContextType {
   isLoading: boolean;
   login: (username: string, password: string) => Promise<void>;
   register: (username: string, password: string, email?: string) => Promise<void>;
-  quickDemoLogin: () => Promise<void>;
   logout: () => void;
 }
 
@@ -77,10 +76,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const quickDemoLogin = async () => {
-    await login('dat_budget', 'Dat@2026');
-  };
-
   const logout = () => {
     removeStoredToken();
     removeStoredUser();
@@ -97,7 +92,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         isLoading,
         login,
         register,
-        quickDemoLogin,
         logout,
       }}
     >
