@@ -38,14 +38,26 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setIsLoading(false);
   }, []);
 
+  const extractUser = (res: any, fallbackUsername: string): User => {
+    if (res.user && res.user.username) {
+      return res.user;
+    }
+    return {
+      id: res.user_id || res.id || '',
+      username: res.username || fallbackUsername,
+      email: res.email || null,
+    };
+  };
+
   const login = async (username: string, password: string) => {
     setIsLoading(true);
     try {
       const res = await api.login(username, password);
+      const userData = extractUser(res, username);
       setStoredToken(res.access_token);
-      setStoredUser(res.user);
+      setStoredUser(userData);
       setToken(res.access_token);
-      setUser(res.user);
+      setUser(userData);
     } finally {
       setIsLoading(false);
     }
@@ -55,10 +67,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setIsLoading(true);
     try {
       const res = await api.register(username, password, email);
+      const userData = extractUser(res, username);
       setStoredToken(res.access_token);
-      setStoredUser(res.user);
+      setStoredUser(userData);
       setToken(res.access_token);
-      setUser(res.user);
+      setUser(userData);
     } finally {
       setIsLoading(false);
     }

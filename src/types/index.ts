@@ -45,6 +45,9 @@ export interface CreateTransactionPayload {
 
 export interface AuthResponse {
   access_token: string;
-  user: User;
+  user_id?: string;
+  username?: string;
+  email?: string | null;
+  user?: User;
 }
 
