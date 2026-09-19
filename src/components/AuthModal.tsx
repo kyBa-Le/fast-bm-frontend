@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { X, Lock, User, Mail, Zap, ArrowRight, AlertCircle } from 'lucide-react';
+import { X, Lock, User, Mail, AlertCircle } from 'lucide-react';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -8,7 +8,7 @@ interface AuthModalProps {
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
-  const { login, register, quickDemoLogin } = useAuth();
+  const { login, register } = useAuth();
   const [isLoginTab, setIsLoginTab] = useState(true);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -36,19 +36,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     }
   };
 
-  const handleQuickLogin = async () => {
-    setError(null);
-    setIsSubmitting(true);
-    try {
-      await quickDemoLogin();
-      onClose();
-    } catch (err: any) {
-      setError(err.message || 'Không thể đăng nhập vào tài khoản mẫu.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-200">
       <div className="relative w-full max-w-md bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-2xl text-slate-900">
@@ -66,32 +53,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             {isLoginTab ? 'Đăng nhập FastBM' : 'Đăng ký tài khoản'}
           </h2>
           <p className="text-xs text-slate-500 mt-1">
-            Đồng bộ thu chi đa nền tảng với Android & PostgreSQL
+            Quản lý và ghi chép tài chính cá nhân
           </p>
         </div>
-
-        {/* Quick Demo Login Preset Button */}
-        <button
-          type="button"
-          onClick={handleQuickLogin}
-          disabled={isSubmitting}
-          className="w-full mb-5 flex items-center justify-between p-3.5 rounded-xl bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 border border-emerald-200 hover:border-emerald-300 transition group cursor-pointer text-left"
-        >
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-emerald-100 text-emerald-700 group-hover:bg-emerald-600 group-hover:text-white transition">
-              <Zap className="w-4 h-4" />
-            </div>
-            <div>
-              <div className="text-xs font-bold text-emerald-900">
-                Tài khoản mẫu: dat_budget
-              </div>
-              <div className="text-[11px] text-emerald-700/80">
-                Đã seed sẵn 49 bản ghi chi tiêu & thu nhập
-              </div>
-            </div>
-          </div>
-          <ArrowRight className="w-4 h-4 text-emerald-600 group-hover:translate-x-0.5 transition" />
-        </button>
 
         {/* Tabs */}
         <div className="flex rounded-xl bg-slate-100 p-1 mb-5 border border-slate-200 text-xs font-bold">
