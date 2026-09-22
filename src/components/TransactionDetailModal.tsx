@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Transaction, TransactionType, CreateTransactionPayload } from '../types';
 import {
   formatVnd,
@@ -47,6 +47,9 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
   const [editTime, setEditTime] = useState<string>(transaction.time || '');
   const [editDesc, setEditDesc] = useState<string>(transaction.description || '');
   const [editCat, setEditCat] = useState<string>(transaction.category);
+
+  const hiddenModalDatePickerRef = useRef<HTMLInputElement>(null);
+  const hiddenModalTimePickerRef = useRef<HTMLInputElement>(null);
 
   const isExpense = (isEditing ? editType : transaction.type) === 'EXPENSE';
 
@@ -283,25 +286,67 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
                 <label className="block text-xs font-bold text-slate-700 mb-1">
                   Ngày
                 </label>
-                <input
-                  type="date"
-                  required
-                  value={editDate}
-                  onChange={(e) => setEditDate(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm text-slate-900 focus:outline-none focus:bg-white focus:border-indigo-500"
-                />
+                <div className="relative flex items-center">
+                  <input
+                    type="text"
+                    required
+                    value={editDate}
+                    onChange={(e) => setEditDate(e.target.value)}
+                    placeholder="YYYY-MM-DD"
+                    className="w-full pl-3 pr-8 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm text-slate-900 focus:outline-none focus:bg-white focus:border-indigo-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => hiddenModalDatePickerRef.current?.showPicker ? hiddenModalDatePickerRef.current.showPicker() : hiddenModalDatePickerRef.current?.click()}
+                    className="absolute right-2 text-slate-400 hover:text-indigo-600 p-1 cursor-pointer transition"
+                    title="Chọn ngày"
+                  >
+                    <Calendar className="w-3.5 h-3.5" />
+                  </button>
+                  <input
+                    type="date"
+                    ref={hiddenModalDatePickerRef}
+                    tabIndex={-1}
+                    aria-hidden="true"
+                    className="sr-only"
+                    onChange={(e) => {
+                      if (e.target.value) setEditDate(e.target.value);
+                    }}
+                  />
+                </div>
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
                   Giờ
                 </label>
-                <input
-                  type="time"
-                  value={editTime}
-                  onChange={(e) => setEditTime(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm text-slate-900 focus:outline-none focus:bg-white focus:border-indigo-500"
-                />
+                <div className="relative flex items-center">
+                  <input
+                    type="text"
+                    value={editTime}
+                    onChange={(e) => setEditTime(e.target.value)}
+                    placeholder="HH:mm"
+                    className="w-full pl-3 pr-8 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm text-slate-900 focus:outline-none focus:bg-white focus:border-indigo-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => hiddenModalTimePickerRef.current?.showPicker ? hiddenModalTimePickerRef.current.showPicker() : hiddenModalTimePickerRef.current?.click()}
+                    className="absolute right-2 text-slate-400 hover:text-indigo-600 p-1 cursor-pointer transition"
+                    title="Chọn giờ"
+                  >
+                    <Clock className="w-3.5 h-3.5" />
+                  </button>
+                  <input
+                    type="time"
+                    ref={hiddenModalTimePickerRef}
+                    tabIndex={-1}
+                    aria-hidden="true"
+                    className="sr-only"
+                    onChange={(e) => {
+                      if (e.target.value) setEditTime(e.target.value);
+                    }}
+                  />
+                </div>
               </div>
             </div>
 

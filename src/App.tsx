@@ -353,11 +353,10 @@ const MainContent: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setMobileTab('FORM')}
-                className={`flex-1 py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer ${
-                  mobileTab === 'FORM'
+                className={`flex-1 py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer ${mobileTab === 'FORM'
                     ? 'bg-white text-slate-900 shadow-sm'
                     : 'text-slate-600 hover:text-slate-900'
-                }`}
+                  }`}
               >
                 <PlusCircle className="w-4 h-4" />
                 <span>Nhập thu chi</span>
@@ -365,11 +364,10 @@ const MainContent: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setMobileTab('HISTORY')}
-                className={`flex-1 py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer ${
-                  mobileTab === 'HISTORY'
+                className={`flex-1 py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer ${mobileTab === 'HISTORY'
                     ? 'bg-white text-slate-900 shadow-sm'
                     : 'text-slate-600 hover:text-slate-900'
-                }`}
+                  }`}
               >
                 <History className="w-4 h-4" />
                 <span>Xem lịch sử ({transactions.length})</span>

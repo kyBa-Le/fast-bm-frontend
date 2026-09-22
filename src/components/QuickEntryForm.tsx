@@ -41,6 +41,8 @@ export const QuickEntryForm: React.FC<QuickEntryFormProps> = ({ onSubmit, isLoad
   const amountInputRef = useRef<HTMLInputElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
   const timeInputRef = useRef<HTMLInputElement>(null);
+  const hiddenDatePickerRef = useRef<HTMLInputElement>(null);
+  const hiddenTimePickerRef = useRef<HTMLInputElement>(null);
   const descInputRef = useRef<HTMLInputElement>(null);
   const categorySelectRef = useRef<HTMLSelectElement>(null);
   const submitButtonRef = useRef<HTMLButtonElement>(null);
@@ -379,14 +381,35 @@ export const QuickEntryForm: React.FC<QuickEntryFormProps> = ({ onSubmit, isLoad
                 <Calendar className="w-3.5 h-3.5 text-slate-400" />
                 <span>Ngày</span>
               </div>
-              <input
-                type="date"
-                ref={dateInputRef}
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                onKeyDown={(e) => handleKeyDown(e, 'date')}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm text-slate-900 focus:outline-none focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition"
-              />
+              <div className="relative flex items-center">
+                <input
+                  type="text"
+                  ref={dateInputRef}
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(e, 'date')}
+                  placeholder="YYYY-MM-DD"
+                  className="w-full pl-3.5 pr-10 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm text-slate-900 focus:outline-none focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition"
+                />
+                <button
+                  type="button"
+                  onClick={() => hiddenDatePickerRef.current?.showPicker ? hiddenDatePickerRef.current.showPicker() : hiddenDatePickerRef.current?.click()}
+                  className="absolute right-2.5 text-slate-400 hover:text-indigo-600 p-1 rounded-lg hover:bg-slate-100 cursor-pointer transition"
+                  title="Chọn từ lịch"
+                >
+                  <Calendar className="w-4 h-4" />
+                </button>
+                <input
+                  type="date"
+                  ref={hiddenDatePickerRef}
+                  tabIndex={-1}
+                  aria-hidden="true"
+                  className="sr-only"
+                  onChange={(e) => {
+                    if (e.target.value) setDate(e.target.value);
+                  }}
+                />
+              </div>
               <div className="flex gap-2 mt-1.5">
                 <button
                   type="button"
@@ -415,14 +438,35 @@ export const QuickEntryForm: React.FC<QuickEntryFormProps> = ({ onSubmit, isLoad
                 <Clock className="w-3.5 h-3.5 text-slate-400" />
                 <span>Giờ (tuỳ chọn)</span>
               </div>
-              <input
-                type="time"
-                ref={timeInputRef}
-                value={time}
-                onChange={(e) => setTime(e.target.value)}
-                onKeyDown={(e) => handleKeyDown(e, 'time')}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm text-slate-900 focus:outline-none focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition"
-              />
+              <div className="relative flex items-center">
+                <input
+                  type="text"
+                  ref={timeInputRef}
+                  value={time}
+                  onChange={(e) => setTime(e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(e, 'time')}
+                  placeholder="HH:mm"
+                  className="w-full pl-3.5 pr-10 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm text-slate-900 focus:outline-none focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition"
+                />
+                <button
+                  type="button"
+                  onClick={() => hiddenTimePickerRef.current?.showPicker ? hiddenTimePickerRef.current.showPicker() : hiddenTimePickerRef.current?.click()}
+                  className="absolute right-2.5 text-slate-400 hover:text-indigo-600 p-1 rounded-lg hover:bg-slate-100 cursor-pointer transition"
+                  title="Chọn giờ"
+                >
+                  <Clock className="w-4 h-4" />
+                </button>
+                <input
+                  type="time"
+                  ref={hiddenTimePickerRef}
+                  tabIndex={-1}
+                  aria-hidden="true"
+                  className="sr-only"
+                  onChange={(e) => {
+                    if (e.target.value) setTime(e.target.value);
+                  }}
+                />
+              </div>
               <div className="flex gap-2 mt-1.5">
                 <button
                   type="button"
