@@ -18,8 +18,8 @@ const MainContent: React.FC = () => {
   const { user, isAuthenticated, login, register } = useAuth();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  // Period filter for financial summary: 'CURRENT_MONTH' (default - matches Android mobile) | 'ALL' | 'YYYY-MM'
-  const [selectedPeriod, setSelectedPeriod] = useState<string>('CURRENT_MONTH');
+  // Period filter for financial summary: 'ALL' (default - all time) | 'CURRENT_MONTH' | 'YYYY-MM'
+  const [selectedPeriod, setSelectedPeriod] = useState<string>('ALL');
 
   // Discover all months present in transaction history
   const availableMonths = useMemo(() => {
@@ -37,20 +37,29 @@ const MainContent: React.FC = () => {
     return Array.from(monthSet).sort().reverse();
   }, [transactions]);
 
-  // Compute active summary from transactions with full precision, parity with mobile, and instant optimistic updates
-  const activeSummary = useMemo<TransactionSummary>(() => {
+  // Filtered transactions based on selectedPeriod (default: ALL -> all transactions)
+  const targetTransactions = useMemo(() => {
     const now = new Date();
     const curMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
-    let targetTransactions = transactions;
+    if (selectedPeriod === 'CURRENT_MONTH') {
+      return transactions.filter((t) => t.date && t.date.startsWith(curMonth));
+    } else if (selectedPeriod !== 'ALL') {
+      return transactions.filter((t) => t.date && t.date.startsWith(selectedPeriod));
+    }
+    return transactions;
+  }, [transactions, selectedPeriod]);
+
+  // Compute active summary from transactions with full precision, parity with mobile, and instant optimistic updates
+  const activeSummary = useMemo<TransactionSummary>(() => {
     let label = 'Toàn bộ thời gian';
 
     if (selectedPeriod === 'CURRENT_MONTH') {
-      targetTransactions = transactions.filter((t) => t.date && t.date.startsWith(curMonth));
+      const now = new Date();
+      const curMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
       const [year, month] = curMonth.split('-');
       label = `Tháng ${month}/${year} (Hiện tại)`;
     } else if (selectedPeriod !== 'ALL') {
-      targetTransactions = transactions.filter((t) => t.date && t.date.startsWith(selectedPeriod));
       const parts = selectedPeriod.split('-');
       if (parts.length === 2) {
         label = `Tháng ${parts[1]}/${parts[0]}`;
@@ -78,7 +87,7 @@ const MainContent: React.FC = () => {
       count: targetTransactions.length,
       periodLabel: label,
     };
-  }, [transactions, selectedPeriod]);
+  }, [targetTransactions, selectedPeriod]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -422,7 +431,7 @@ const MainContent: React.FC = () => {
                   }`}
               >
                 <History className="w-4 h-4" />
-                <span>Xem lịch sử ({transactions.length})</span>
+                <span>Xem lịch sử ({targetTransactions.length})</span>
               </button>
             </div>
 
@@ -436,7 +445,8 @@ const MainContent: React.FC = () => {
               {/* History: visible on mobile when mobileTab === 'HISTORY', always visible on desktop */}
               <div className={`w-full lg:col-span-7 ${mobileTab === 'HISTORY' ? 'block' : 'hidden lg:block'}`}>
                 <TransactionList
-                  transactions={transactions}
+                  transactions={targetTransactions}
+                  allTransactions={transactions}
                   onDelete={handleDeleteTransaction}
                   onUpdate={handleUpdateTransaction}
                   isLoading={isLoading}

@@ -23,10 +23,11 @@ interface BalanceSummaryProps {
 export const BalanceSummary: React.FC<BalanceSummaryProps> = ({
   summary,
   availableMonths = [],
-  selectedPeriod = 'CURRENT_MONTH',
+  selectedPeriod = 'ALL',
   onSelectPeriod,
 }) => {
   const isPositive = summary.balance >= 0;
+  const isAllTime = selectedPeriod === 'ALL';
   const isCurrentMonth = selectedPeriod === 'CURRENT_MONTH';
 
   // Format month for display (e.g. '2026-10' -> 'Tháng 10/2026')
@@ -46,7 +47,7 @@ export const BalanceSummary: React.FC<BalanceSummaryProps> = ({
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-indigo-600 animate-pulse"></span>
             <span className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-indigo-700">
-              {summary.periodLabel ? `Số dư khả dụng — ${summary.periodLabel}` : 'Số dư khả dụng hiện tại'}
+              {summary.periodLabel ? `Số dư khả dụng — ${summary.periodLabel}` : 'Số dư khả dụng toàn thời gian'}
             </span>
           </div>
 
@@ -60,13 +61,19 @@ export const BalanceSummary: React.FC<BalanceSummaryProps> = ({
                   onChange={(e) => onSelectPeriod(e.target.value)}
                   className="pl-8 pr-7 py-1.5 bg-white/90 hover:bg-white border border-indigo-200 hover:border-indigo-300 text-indigo-900 font-semibold text-xs rounded-xl shadow-2xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 cursor-pointer transition appearance-none"
                 >
-                  <option value="CURRENT_MONTH">Tháng này (Mặc định - Đồng bộ Mobile)</option>
-                  <option value="ALL">Toàn bộ thời gian (Tất cả)</option>
-                  {availableMonths.map((m) => (
-                    <option key={m} value={m}>
-                      {formatMonthLabel(m)}
-                    </option>
-                  ))}
+                  <option value="ALL">Toàn bộ thời gian (Mặc định)</option>
+                  <option value="CURRENT_MONTH">Tháng này (Hiện tại)</option>
+                  {availableMonths
+                    .filter((m) => {
+                      const now = new Date();
+                      const curMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                      return m !== curMonth;
+                    })
+                    .map((m) => (
+                      <option key={m} value={m}>
+                        {formatMonthLabel(m)}
+                      </option>
+                    ))}
                 </select>
                 <ChevronDown className="w-3.5 h-3.5 text-indigo-500 absolute right-2 pointer-events-none" />
               </div>
@@ -96,10 +103,17 @@ export const BalanceSummary: React.FC<BalanceSummaryProps> = ({
             </span>
           </div>
 
+          {isAllTime && (
+            <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-indigo-50 border border-indigo-200 text-[11px] font-bold text-indigo-700">
+              <Layers className="w-3 h-3 text-indigo-600" />
+              <span>Số dư tích lũy toàn thời gian</span>
+            </div>
+          )}
+
           {isCurrentMonth && (
             <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-[11px] font-bold text-emerald-700">
               <Smartphone className="w-3 h-3 text-emerald-600" />
-              <span>Khớp số dư với ứng dụng Android</span>
+              <span>Dòng tiền tháng hiện tại</span>
             </div>
           )}
         </div>

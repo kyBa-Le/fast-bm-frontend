@@ -18,6 +18,7 @@ import { exportTransactionsToCsv } from '../utils/csv';
 
 interface TransactionListProps {
   transactions: Transaction[];
+  allTransactions?: Transaction[];
   onDelete: (id: string) => Promise<void>;
   onUpdate: (id: string, payload: Partial<CreateTransactionPayload>) => Promise<void>;
   isLoading?: boolean;
@@ -32,6 +33,7 @@ interface DateGroup {
 
 export const TransactionList: React.FC<TransactionListProps> = ({
   transactions,
+  allTransactions,
   onDelete,
   onUpdate,
   isLoading,
@@ -42,7 +44,8 @@ export const TransactionList: React.FC<TransactionListProps> = ({
   const [exportMessage, setExportMessage] = useState<string | null>(null);
 
   const handleExportAll = () => {
-    const result = exportTransactionsToCsv(transactions);
+    const dataToExport = allTransactions && allTransactions.length > 0 ? allTransactions : transactions;
+    const result = exportTransactionsToCsv(dataToExport);
     if (result.success) {
       setExportMessage(`Đã xuất thành công toàn bộ ${result.count} giao dịch ra file CSV!`);
       setTimeout(() => setExportMessage(null), 5000);
