@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Navbar } from './components/Navbar';
 import { AuthModal } from './components/AuthModal';
@@ -18,12 +18,67 @@ const MainContent: React.FC = () => {
   const { user, isAuthenticated, login, register } = useAuth();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [summary, setSummary] = useState<TransactionSummary>({
-    totalIncome: 0,
-    totalExpense: 0,
-    balance: 0,
-    count: 0,
-  });
+  // Period filter for financial summary: 'CURRENT_MONTH' (default - matches Android mobile) | 'ALL' | 'YYYY-MM'
+  const [selectedPeriod, setSelectedPeriod] = useState<string>('CURRENT_MONTH');
+
+  // Discover all months present in transaction history
+  const availableMonths = useMemo(() => {
+    const monthSet = new Set<string>();
+    const now = new Date();
+    const curMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    monthSet.add(curMonth);
+
+    transactions.forEach((t) => {
+      if (t.date && t.date.length >= 7) {
+        monthSet.add(t.date.substring(0, 7));
+      }
+    });
+
+    return Array.from(monthSet).sort().reverse();
+  }, [transactions]);
+
+  // Compute active summary from transactions with full precision, parity with mobile, and instant optimistic updates
+  const activeSummary = useMemo<TransactionSummary>(() => {
+    const now = new Date();
+    const curMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+    let targetTransactions = transactions;
+    let label = 'Toàn bộ thời gian';
+
+    if (selectedPeriod === 'CURRENT_MONTH') {
+      targetTransactions = transactions.filter((t) => t.date && t.date.startsWith(curMonth));
+      const [year, month] = curMonth.split('-');
+      label = `Tháng ${month}/${year} (Hiện tại)`;
+    } else if (selectedPeriod !== 'ALL') {
+      targetTransactions = transactions.filter((t) => t.date && t.date.startsWith(selectedPeriod));
+      const parts = selectedPeriod.split('-');
+      if (parts.length === 2) {
+        label = `Tháng ${parts[1]}/${parts[0]}`;
+      } else {
+        label = selectedPeriod;
+      }
+    }
+
+    let totalIncome = 0;
+    let totalExpense = 0;
+
+    targetTransactions.forEach((t) => {
+      const amt = Number(t.amount) || 0;
+      if (t.type === 'INCOME') {
+        totalIncome += amt;
+      } else if (t.type === 'EXPENSE') {
+        totalExpense += amt;
+      }
+    });
+
+    return {
+      totalIncome,
+      totalExpense,
+      balance: totalIncome - totalExpense,
+      count: targetTransactions.length,
+      periodLabel: label,
+    };
+  }, [transactions, selectedPeriod]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -49,7 +104,6 @@ const MainContent: React.FC = () => {
     try {
       const res = await api.getTransactions();
       setTransactions(res.transactions);
-      setSummary(res.summary);
     } catch (err: any) {
       console.error('Failed to load transactions:', err);
     } finally {
@@ -142,13 +196,6 @@ const MainContent: React.FC = () => {
 
       // Optimistic UI update
       setTransactions((prev) => [offlineTx, ...prev]);
-      setSummary((prev) => ({
-        ...prev,
-        totalIncome: offlineTx.type === 'INCOME' ? prev.totalIncome + offlineTx.amount : prev.totalIncome,
-        totalExpense: offlineTx.type === 'EXPENSE' ? prev.totalExpense + offlineTx.amount : prev.totalExpense,
-        balance: offlineTx.type === 'INCOME' ? prev.balance + offlineTx.amount : prev.balance - offlineTx.amount,
-        count: prev.count + 1,
-      }));
 
       setSyncNotification(
         'Đã lưu tạm giao dịch trên thiết bị do kết nối mạng gián đoạn. Giao dịch sẽ được tự động đồng bộ khi có kết nối trở lại.'
@@ -346,7 +393,12 @@ const MainContent: React.FC = () => {
             )}
 
             {/* Balance Overview Cards (Distinct 3 Colors) */}
-            <BalanceSummary summary={summary} />
+            <BalanceSummary
+              summary={activeSummary}
+              availableMonths={availableMonths}
+              selectedPeriod={selectedPeriod}
+              onSelectPeriod={setSelectedPeriod}
+            />
 
             {/* Mobile View Switcher Tabs (Only visible on mobile devices < lg) */}
             <div className="lg:hidden flex rounded-2xl bg-slate-200/80 p-1 mb-5 text-xs font-bold border border-slate-300/50 shadow-2xs">

@@ -11,7 +11,10 @@ import {
   Inbox,
   ChevronRight,
   CalendarDays,
+  Download,
+  CheckCircle2,
 } from 'lucide-react';
+import { exportTransactionsToCsv } from '../utils/csv';
 
 interface TransactionListProps {
   transactions: Transaction[];
@@ -36,6 +39,17 @@ export const TransactionList: React.FC<TransactionListProps> = ({
   const [filterType, setFilterType] = useState<'ALL' | TransactionType>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
+  const [exportMessage, setExportMessage] = useState<string | null>(null);
+
+  const handleExportAll = () => {
+    const result = exportTransactionsToCsv(transactions);
+    if (result.success) {
+      setExportMessage(`Đã xuất thành công toàn bộ ${result.count} giao dịch ra file CSV!`);
+      setTimeout(() => setExportMessage(null), 5000);
+    } else {
+      alert('Chưa có dữ liệu giao dịch nào để xuất CSV.');
+    }
+  };
 
   const filtered = useMemo(() => {
     return transactions.filter((t) => {
@@ -106,43 +120,74 @@ export const TransactionList: React.FC<TransactionListProps> = ({
           </p>
         </div>
 
-        {/* Filter Pills */}
-        <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-semibold">
+        {/* Action Controls & Filters */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Export to CSV Button */}
           <button
             type="button"
-            onClick={() => setFilterType('ALL')}
-            className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${
-              filterType === 'ALL'
-                ? 'bg-white text-slate-900 shadow-2xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
+            onClick={handleExportAll}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 active:bg-slate-100 text-slate-700 hover:text-indigo-600 text-xs font-semibold shadow-2xs hover:shadow-xs transition cursor-pointer"
+            title="Xuất toàn bộ lịch sử giao dịch ra file CSV (Mở được bằng Excel tiếng Việt)"
           >
-            Tất cả
+            <Download className="w-3.5 h-3.5 text-indigo-600" />
+            <span>Xuất CSV ({transactions.length})</span>
           </button>
-          <button
-            type="button"
-            onClick={() => setFilterType('EXPENSE')}
-            className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${
-              filterType === 'EXPENSE'
-                ? 'bg-rose-600 text-white shadow-2xs'
-                : 'text-slate-600 hover:text-rose-600'
-            }`}
-          >
-            Chi tiêu
-          </button>
-          <button
-            type="button"
-            onClick={() => setFilterType('INCOME')}
-            className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${
-              filterType === 'INCOME'
-                ? 'bg-emerald-600 text-white shadow-2xs'
-                : 'text-slate-600 hover:text-emerald-600'
-            }`}
-          >
-            Thu nhập
-          </button>
+
+          {/* Filter Pills */}
+          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-semibold">
+            <button
+              type="button"
+              onClick={() => setFilterType('ALL')}
+              className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${
+                filterType === 'ALL'
+                  ? 'bg-white text-slate-900 shadow-2xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Tất cả
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterType('EXPENSE')}
+              className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${
+                filterType === 'EXPENSE'
+                  ? 'bg-rose-600 text-white shadow-2xs'
+                  : 'text-slate-600 hover:text-rose-600'
+              }`}
+            >
+              Chi tiêu
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterType('INCOME')}
+              className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${
+                filterType === 'INCOME'
+                  ? 'bg-emerald-600 text-white shadow-2xs'
+                  : 'text-slate-600 hover:text-emerald-600'
+              }`}
+            >
+              Thu nhập
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Export Success Notification Banner */}
+      {exportMessage && (
+        <div className="mb-4 p-3 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-between text-xs text-emerald-800 font-medium">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>{exportMessage}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setExportMessage(null)}
+            className="text-emerald-700 hover:text-emerald-900 font-bold px-1.5 py-0.5 rounded cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Search Input */}
       <div className="relative mb-4">
@@ -218,11 +263,10 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                         {/* Left: Icon & Description */}
                         <div className="flex items-center gap-3 min-w-0">
                           <div
-                            className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                              isExpense
+                            className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${isExpense
                                 ? 'bg-rose-100 text-rose-700'
                                 : 'bg-emerald-100 text-emerald-700'
-                            }`}
+                              }`}
                           >
                             {isExpense ? (
                               <TrendingDown className="w-4 h-4" />
@@ -260,9 +304,8 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                         {/* Right: Formatted Amount & Chevron */}
                         <div className="flex items-center gap-2.5 shrink-0 ml-3">
                           <div
-                            className={`font-extrabold text-sm sm:text-base tracking-tight text-right ${
-                              isExpense ? 'text-rose-600' : 'text-emerald-600'
-                            }`}
+                            className={`font-extrabold text-sm sm:text-base tracking-tight text-right ${isExpense ? 'text-rose-600' : 'text-emerald-600'
+                              }`}
                           >
                             {isExpense ? '-' : '+'}
                             {formatVnd(tx.amount)}

@@ -26,6 +26,7 @@ export interface TransactionSummary {
   totalExpense: number;
   balance: number;
   count: number;
+  periodLabel?: string;
 }
 
 export interface TransactionsResponse {
